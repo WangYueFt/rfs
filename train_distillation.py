@@ -354,32 +354,6 @@ def main():
             save_file = os.path.join(opt.save_folder, 'ckpt_epoch_{epoch}.pth'.format(epoch=epoch))
             torch.save(state, save_file)
 
-    # few-shot evaluation
-    start = time.time()
-    val_acc, val_std = meta_test(model_s, meta_valloader, use_logit=True)
-    val_time = time.time() - start
-    print('val_acc: {:.4f}, val_std: {:.4f}, time: {:.1f}'.format(val_acc, val_std, val_time))
-
-    start = time.time()
-    val_acc_feat, val_std_feat = meta_test(model_s, meta_valloader, use_logit=False)
-    val_time = time.time() - start
-    print('val_acc_feat: {:.4f}, val_std: {:.4f}, time: {:.1f}'.format(val_acc_feat, val_std_feat, val_time))
-
-    start = time.time()
-    test_acc, test_std = meta_test(model_s, meta_testloader, use_logit=True)
-    test_time = time.time() - start
-    print('test_acc: {:.4f}, test_std: {:.4f}, time: {:.1f}'.format(test_acc, test_std, test_time))
-
-    start = time.time()
-    test_acc_feat, test_std_feat = meta_test(model_s, meta_testloader, use_logit=False)
-    test_time = time.time() - start
-    print('test_acc_feat: {:.4f}, test_std: {:.4f}, time: {:.1f}'.format(test_acc_feat, test_std_feat, test_time))
-
-    logger.log_value('meta_val_acc', val_acc, opt.epochs)
-    logger.log_value('meta_val_acc_feat', val_acc_feat, opt.epochs)
-    logger.log_value('meta_test_acc', test_acc, opt.epochs)
-    logger.log_value('meta_test_acc_feat', test_acc_feat, opt.epochs)
-
     # save the last model
     state = {
         'opt': opt,
