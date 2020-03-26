@@ -2,7 +2,7 @@
 
 Representations for Few-Shot Learning (RFS). This repo covers the implementation of the following paper:  
 
-**"Rethinking few-shot image classification: a good embedding is all you need?"** [Paper](https://arxiv.org/abs/2003.11539)
+**"Rethinking few-shot image classification: a good embedding is all you need?"** [Paper](https://arxiv.org/abs/2003.11539),[Project](https://people.csail.mit.edu/yuewang/projects/rfs/) 
 
 If you find this repo useful for your research, please consider citing the paper  
 ```
