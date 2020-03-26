@@ -2,14 +2,14 @@
 
 Representations for Few-Shot Learning (RFS). This repo covers the implementation of the following paper:  
 
-**"Rethinking few-shot image classification: a good embedding is all you need?"**
+**"Rethinking few-shot image classification: a good embedding is all you need?"** [Paper](https://arxiv.org/abs/2003.11539)
 
 If you find this repo useful for your research, please consider citing the paper  
 ```
 @article{tian2020rethink,
   title={Rethinking few-shot image classification: a good embedding is all you need?},
   author={Tian, Yonglong and Wang, Yue and Krishnan, Dilip and Tenenbaum, Joshua B and Isola, Phillip},
-  journal={arXiv preprint},
+  journal={arXiv preprint arXiv:2003.11539},
   year={2020}
 }
 ```
