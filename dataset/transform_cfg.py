@@ -28,6 +28,23 @@ transform_A = [
     ])
 ]
 
+transform_A_test = [
+    transforms.Compose([
+        lambda x: Image.fromarray(x),
+        transforms.RandomCrop(84, padding=8),
+        transforms.RandomHorizontalFlip(),
+        lambda x: np.asarray(x),
+        transforms.ToTensor(),
+        normalize
+    ]),
+
+    transforms.Compose([
+        lambda x: Image.fromarray(x),
+        transforms.ToTensor(),
+        normalize
+    ])
+]
+
 # CIFAR style transformation
 mean = [0.5071, 0.4867, 0.4408]
 std = [0.2675, 0.2565, 0.2761]
@@ -50,6 +67,23 @@ transform_D = [
     ])
 ]
 
+transform_D_test = [
+    transforms.Compose([
+        lambda x: Image.fromarray(x),
+        transforms.RandomCrop(32, padding=4),
+        transforms.RandomHorizontalFlip(),
+        lambda x: np.asarray(x),
+        transforms.ToTensor(),
+        normalize_cifar100
+    ]),
+
+    transforms.Compose([
+        lambda x: Image.fromarray(x),
+        transforms.ToTensor(),
+        normalize_cifar100
+    ])
+]
+
 
 transforms_list = ['A', 'D']
 
@@ -57,4 +91,9 @@ transforms_list = ['A', 'D']
 transforms_options = {
     'A': transform_A,
     'D': transform_D,
+}
+
+transforms_test_options = {
+    'A': transform_A_test,
+    'D': transform_D_test,
 }

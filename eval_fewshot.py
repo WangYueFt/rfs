@@ -14,7 +14,7 @@ from models.util import create_model
 from dataset.mini_imagenet import MetaImageNet
 from dataset.tiered_imagenet import MetaTieredImageNet
 from dataset.cifar import MetaCIFAR100
-from dataset.transform_cfg import transforms_options, transforms_list
+from dataset.transform_cfg import transforms_test_options, transforms_list
 
 from eval.meta_eval import meta_test
 
@@ -76,7 +76,7 @@ def main():
     args = opt
 
     if opt.dataset == 'miniImageNet':
-        train_trans, test_trans = transforms_options[opt.transform]
+        train_trans, test_trans = transforms_test_options[opt.transform]
         meta_testloader = DataLoader(MetaImageNet(args=opt, partition='test',
                                                   train_transform=train_trans,
                                                   test_transform=test_trans,
@@ -94,7 +94,7 @@ def main():
         else:
             n_cls = 64
     elif opt.dataset == 'tieredImageNet':
-        train_trans, test_trans = transforms_options[opt.transform]
+        train_trans, test_trans = transforms_test_options[opt.transform]
         meta_testloader = DataLoader(MetaTieredImageNet(args=opt, partition='test',
                                                         train_transform=train_trans,
                                                         test_transform=test_trans,
@@ -112,7 +112,7 @@ def main():
         else:
             n_cls = 351
     elif opt.dataset == 'CIFAR-FS' or opt.dataset == 'FC100':
-        train_trans, test_trans = transforms_options['D']
+        train_trans, test_trans = transforms_test_options['D']
         meta_testloader = DataLoader(MetaCIFAR100(args=opt, partition='test',
                                                   train_transform=train_trans,
                                                   test_transform=test_trans,
