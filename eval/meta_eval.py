@@ -60,7 +60,12 @@ def meta_test(net, testloader, use_logit=True, is_norm=True, classifier='LR'):
             query_ys = query_ys.view(-1).numpy()
 
             if classifier == 'LR':
-                clf = LogisticRegression(random_state=0, solver='lbfgs', max_iter=1000,
+                clf = LogisticRegression(penalty='l2',
+                                         random_state=0,
+                                         C=10,
+                                         solver='lbfgs',
+                                         max_iter=1000,
+                                         class_weight='balanced',
                                          multi_class='multinomial')
                 clf.fit(support_features, support_ys)
                 query_ys_pred = clf.predict(query_features)
