@@ -24,6 +24,10 @@ renamed the file. Our version of data can be downloaded from here:
 
 [[DropBox]](https://www.dropbox.com/sh/6yd1ygtyc3yd981/AABVeEqzC08YQv4UZk7lNHvya?dl=0)
 
+## Pre-trained Models
+
+[[DropBox]](https://www.dropbox.com/sh/6xt97e7yxheac2e/AADFVQDbzWap6qIGIHBXsA8ca?dl=0)
+
 ## Running
 
 Exemplar commands for running the code can be found in `scripts/run.sh`.
