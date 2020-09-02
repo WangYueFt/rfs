@@ -1,25 +1,29 @@
 from __future__ import print_function
 
+import os
 import argparse
 import socket
 import time
+import sys
 
 import torch
 import torch.backends.cudnn as cudnn
 from torch.utils.data import DataLoader
 
-from models import model_pool
+from models import model_dict, model_pool
 from models.util import create_model
 
-from dataset.mini_imagenet import MetaImageNet
-from dataset.tiered_imagenet import MetaTieredImageNet
-from dataset.cifar import MetaCIFAR100
-from dataset.transform_cfg import transforms_test_options, transforms_list
+from dataset.mini_imagenet import ImageNet, MetaImageNet
+from dataset.tiered_imagenet import TieredImageNet, MetaTieredImageNet
+from dataset.cifar import CIFAR100, MetaCIFAR100
+from dataset.transform_cfg import transforms_options, transforms_list
 
 from eval.meta_eval import meta_test
 
 
 def parse_option():
+
+    hostname = socket.gethostname()
 
     parser = argparse.ArgumentParser('argument for training')
 
@@ -32,9 +36,6 @@ def parse_option():
                                                                                 'CIFAR-FS', 'FC100'])
     parser.add_argument('--transform', type=str, default='A', choices=transforms_list)
 
-    # specify data_root
-    parser.add_argument('--data_root', type=str, default='', help='path to data root')
-
     # meta setting
     parser.add_argument('--n_test_runs', type=int, default=600, metavar='N',
                         help='Number of test runs')
@@ -46,6 +47,8 @@ def parse_option():
                         help='Number of query in test')
     parser.add_argument('--n_aug_support_samples', default=5, type=int,
                         help='The number of augmented samples for each meta test sample')
+    parser.add_argument('--data_root', type=str, default='data', metavar='N',
+                        help='Root dataset')
     parser.add_argument('--num_workers', type=int, default=3, metavar='N',
                         help='Number of workers for dataloader')
     parser.add_argument('--test_batch_size', type=int, default=1, metavar='test_batch_size',
@@ -59,11 +62,16 @@ def parse_option():
         opt.use_trainval = False
 
     # set the path according to the environment
-    if not opt.data_root:
-        opt.data_root = './data/{}'.format(opt.dataset)
+    if hostname.startswith('visiongpu'):
+        opt.data_root = '/data/vision/phillipi/rep-learn/{}'.format(opt.dataset)
+        opt.data_aug = True
+    elif hostname.startswith('instance'):
+        opt.data_root = '/mnt/globalssd/fewshot/{}'.format(opt.dataset)
+        opt.data_aug = True
+    elif opt.data_root != 'data':
+        opt.data_aug = True
     else:
-        opt.data_root = '{}/{}'.format(opt.data_root, opt.dataset)
-    opt.data_aug = True
+        raise NotImplementedError('server invalid: {}'.format(hostname))
 
     return opt
 
@@ -74,9 +82,11 @@ def main():
 
     # test loader
     args = opt
+    args.batch_size = args.test_batch_size
+    # args.n_aug_support_samples = 1
 
     if opt.dataset == 'miniImageNet':
-        train_trans, test_trans = transforms_test_options[opt.transform]
+        train_trans, test_trans = transforms_options[opt.transform]
         meta_testloader = DataLoader(MetaImageNet(args=opt, partition='test',
                                                   train_transform=train_trans,
                                                   test_transform=test_trans,
@@ -94,7 +104,7 @@ def main():
         else:
             n_cls = 64
     elif opt.dataset == 'tieredImageNet':
-        train_trans, test_trans = transforms_test_options[opt.transform]
+        train_trans, test_trans = transforms_options[opt.transform]
         meta_testloader = DataLoader(MetaTieredImageNet(args=opt, partition='test',
                                                         train_transform=train_trans,
                                                         test_transform=test_trans,
@@ -112,7 +122,7 @@ def main():
         else:
             n_cls = 351
     elif opt.dataset == 'CIFAR-FS' or opt.dataset == 'FC100':
-        train_trans, test_trans = transforms_test_options['D']
+        train_trans, test_trans = transforms_options['D']
         meta_testloader = DataLoader(MetaCIFAR100(args=opt, partition='test',
                                                   train_transform=train_trans,
                                                   test_transform=test_trans,
@@ -150,22 +160,28 @@ def main():
     start = time.time()
     val_acc, val_std = meta_test(model, meta_valloader)
     val_time = time.time() - start
-    print('val_acc: {:.4f}, val_std: {:.4f}, time: {:.1f}'.format(val_acc, val_std, val_time))
+    print('val_acc: {:.4f}, val_std: {:.4f}, time: {:.1f}'.format(val_acc, val_std,
+                                                                  val_time))
 
     start = time.time()
     val_acc_feat, val_std_feat = meta_test(model, meta_valloader, use_logit=False)
     val_time = time.time() - start
-    print('val_acc_feat: {:.4f}, val_std: {:.4f}, time: {:.1f}'.format(val_acc_feat, val_std_feat, val_time))
+    print('val_acc_feat: {:.4f}, val_std: {:.4f}, time: {:.1f}'.format(val_acc_feat,
+                                                                       val_std_feat,
+                                                                       val_time))
 
     start = time.time()
     test_acc, test_std = meta_test(model, meta_testloader)
     test_time = time.time() - start
-    print('test_acc: {:.4f}, test_std: {:.4f}, time: {:.1f}'.format(test_acc, test_std, test_time))
+    print('test_acc: {:.4f}, test_std: {:.4f}, time: {:.1f}'.format(test_acc, test_std,
+                                                                    test_time))
 
     start = time.time()
     test_acc_feat, test_std_feat = meta_test(model, meta_testloader, use_logit=False)
     test_time = time.time() - start
-    print('test_acc_feat: {:.4f}, test_std: {:.4f}, time: {:.1f}'.format(test_acc_feat, test_std_feat, test_time))
+    print('test_acc_feat: {:.4f}, test_std: {:.4f}, time: {:.1f}'.format(test_acc_feat,
+                                                                         test_std_feat,
+                                                                         test_time))
 
 
 if __name__ == '__main__':

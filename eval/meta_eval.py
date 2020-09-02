@@ -7,10 +7,13 @@ from tqdm import tqdm
 
 import torch
 from sklearn import metrics
-from sklearn.svm import SVC
+from sklearn.svm import SVC, LinearSVC
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier
+
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
 
 
 def mean_confidence_interval(data, confidence=0.95):
@@ -27,7 +30,7 @@ def normalize(x):
     return out
 
 
-def meta_test(net, testloader, use_logit=True, is_norm=True, classifier='LR'):
+def meta_test(net, testloader, use_logit=True, is_norm=True, classifier='LR', opt=None):
     net = net.eval()
     acc = []
 
@@ -36,9 +39,9 @@ def meta_test(net, testloader, use_logit=True, is_norm=True, classifier='LR'):
             support_xs, support_ys, query_xs, query_ys = data
             support_xs = support_xs.cuda()
             query_xs = query_xs.cuda()
-            batch_size, _, height, width, channel = support_xs.size()
-            support_xs = support_xs.view(-1, height, width, channel)
-            query_xs = query_xs.view(-1, height, width, channel)
+            batch_size, _, channel, height, width = support_xs.size()
+            support_xs = support_xs.view(-1, channel, height, width)
+            query_xs = query_xs.view(-1, channel, height, width)
 
             if use_logit:
                 support_features = net(support_xs).view(support_xs.size(0), -1)
@@ -59,26 +62,48 @@ def meta_test(net, testloader, use_logit=True, is_norm=True, classifier='LR'):
             support_ys = support_ys.view(-1).numpy()
             query_ys = query_ys.view(-1).numpy()
 
+            #  clf = SVC(gamma='auto', C=0.1)
             if classifier == 'LR':
                 clf = LogisticRegression(penalty='l2',
                                          random_state=0,
-                                         C=10,
+                                         C=1.0,
                                          solver='lbfgs',
                                          max_iter=1000,
-                                         class_weight='balanced',
                                          multi_class='multinomial')
+                clf.fit(support_features, support_ys)
+                query_ys_pred = clf.predict(query_features)
+            elif classifier == 'SVM':
+                clf = make_pipeline(StandardScaler(), SVC(gamma='auto',
+                                                          C=1,
+                                                          kernel='linear',
+                                                          decision_function_shape='ovr'))
                 clf.fit(support_features, support_ys)
                 query_ys_pred = clf.predict(query_features)
             elif classifier == 'NN':
                 query_ys_pred = NN(support_features, support_ys, query_features)
             elif classifier == 'Cosine':
                 query_ys_pred = Cosine(support_features, support_ys, query_features)
+            elif classifier == 'Proto':
+                query_ys_pred = Proto(support_features, support_ys, query_features, opt)
             else:
                 raise NotImplementedError('classifier not supported: {}'.format(classifier))
 
             acc.append(metrics.accuracy_score(query_ys, query_ys_pred))
 
     return mean_confidence_interval(acc)
+
+
+def Proto(support, support_ys, query, opt):
+    """Protonet classifier"""
+    nc = support.shape[-1]
+    support = np.reshape(support, (-1, 1, opt.n_ways, opt.n_shots, nc))
+    support = support.mean(axis=3)
+    batch_size = support.shape[0]
+    query = np.reshape(query, (batch_size, -1, 1, nc))
+    logits = - ((query - support)**2).sum(-1)
+    pred = np.argmax(logits, axis=-1)
+    pred = np.reshape(pred, (-1,))
+    return pred
 
 
 def NN(support, support_ys, query):
